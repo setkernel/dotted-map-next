@@ -1,0 +1,56 @@
+# merge-audit: GitHub Free can't require Raghav's approval on private repos, so this makes any
+# change that reaches the default branch without him visible at once. On every push to the
+# default branch it checks the commit's pull request: fine if Raghav merged it or approved it;
+# otherwise (direct push, or a PR merged without his approval) it opens an `unapproved-merge`
+# issue in this repo. Dependabot PRs merged by an auto-merge workflow are reported too.
+name: merge-audit
+
+on:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+
+jobs:
+  audit:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ${{ github.event.repository.private && (vars.CI_RUNNER || 'setkernel-linux') || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          APPROVER: ${{ vars.MERGE_APPROVER || 'realRaghavGupta' }}
+        with:
+          script: |
+            const approver = process.env.APPROVER.toLowerCase();
+            const { owner, repo } = context.repo;
+            const sha = context.sha;
+            const prs = (await github.rest.repos.listPullRequestsAssociatedWithCommit({ owner, repo, commit_sha: sha })).data
+              .filter(p => p.merged_at);
+            let problem = null, link = `https://github.com/${owner}/${repo}/commit/${sha}`;
+            if (!prs.length) {
+              const pusher = (context.payload.pusher?.name || context.actor || '').toLowerCase();
+              if (pusher !== approver) problem = `Direct push to \`${context.ref_name ?? 'main'}\` by **${pusher}** with no pull request.`;
+            } else {
+              const pr = prs[0]; link = pr.html_url;
+              const mergedBy = (pr.merged_by?.login || '').toLowerCase();
+              const reviews = (await github.rest.pulls.listReviews({ owner, repo, pull_number: pr.number })).data;
+              const approved = reviews.some(r => r.state === 'APPROVED' && r.user?.login?.toLowerCase() === approver);
+              if (mergedBy !== approver && !approved) problem = `PR #${pr.number} was merged by **${mergedBy || 'unknown'}** without ${approver}'s approval.`;
+            }
+            if (!problem) { core.info('ok: merged or approved by ' + approver); return; }
+            await github.rest.issues.create({
+              owner, repo,
+              title: `Unapproved change on the default branch (${sha.slice(0, 7)})`,
+              body: `${problem}\n\n${link}\n\nPer setkernel rules every change to the default branch needs ${approver}'s merge or approval. Review it, then close this issue with what you decided (keep, or revert).`,
+              labels: ['unapproved-merge'],
+              assignees: [process.env.APPROVER],
+            }).catch(async e => {
+              // label may not exist yet
+              await github.rest.issues.create({ owner, repo, title: `Unapproved change on the default branch (${sha.slice(0, 7)})`,
+                body: `${problem}\n\n${link}`, assignees: [process.env.APPROVER] });
+            });
+            core.warning(problem);
