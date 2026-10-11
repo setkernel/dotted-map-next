@@ -31,17 +31,19 @@
   },
   "scripts": {
     "build": "tsup",
-    "typecheck": "tsc --noEmit",
-    "test": "node test.js",
-    "test:enhanced": "node test.enhanced.js",
-    "test:all": "npm test && npm run test:enhanced",
     "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:all": "npm run typecheck && npm run test:coverage",
+    "test:package": "node scripts/smoke-pack.mjs",
+    "lint:package": "publint --strict && attw --pack .",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"*.{js,mjs,ts,mts}\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"*.{js,mjs,ts,mts}\"",
     "clean": "node -e \"const fs = require('fs'); ['index', 'without-countries'].flatMap((n) => ['.js', '.mjs', '.d.ts', '.d.mts'].map((e) => n + e)).forEach((f) => fs.rmSync(f, { force: true }));\"",
     "prepack": "npm run clean && npm run build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.{js,mjs,ts}\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"*.{js,mjs,ts}\"",
-    "size": "ls -l index.js index.mjs without-countries.js without-countries.mjs",
-    "lint:package": "publint --strict && attw --pack ."
+    "size": "ls -l index.js index.mjs without-countries.js without-countries.mjs"
   },
   "keywords": [
     "map",

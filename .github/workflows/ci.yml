@@ -48,11 +48,8 @@ jobs:
       - name: 🔨 Build production package
         run: npm run build
 
-      - name: 🧪 Execute basic test suite
+      - name: 🧪 Execute test suite
         run: npm test
-
-      - name: 🔬 Execute comprehensive test suite
-        run: npm run test:enhanced
 
       - name: 🔐 Run security audit
         run: |
