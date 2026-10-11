@@ -20,6 +20,7 @@ export type {
   DottedMapInstance,
   Grid,
   Image,
+  MapData,
   MultiPolygonFeature,
   Pin,
   Point,
