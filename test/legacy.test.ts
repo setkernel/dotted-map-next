@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest';
 import DottedMap, { getMapJSON } from '../src/with-countries';
 import DottedMapWithoutCountries from '../src/without-countries';
 
+// Timing assertions are meaningless under coverage instrumentation; they run
+// in `npm test`, which CI runs on every Node version.
+const timed = it.skipIf(process.env.DOTTED_MAP_COVERAGE === '1');
+
 describe('test.js (README example)', () => {
   it('runs the README example without throwing', () => {
     const map = new DottedMap({ height: 60, grid: 'diagonal' });
@@ -59,7 +63,7 @@ describe('Basic Functionality Tests', () => {
 });
 
 describe('Cache Performance Tests', () => {
-  it('Cache works for identical parameters', () => {
+  timed('Cache works for identical parameters', () => {
     const start1 = Date.now();
     new DottedMap({ height: 30, grid: 'diagonal' });
     const time1 = Date.now() - start1;
@@ -202,7 +206,7 @@ describe('Shape Generation Tests', () => {
 });
 
 describe('Performance Tests', () => {
-  it('Handles moderate size maps efficiently', () => {
+  timed('Handles moderate size maps efficiently', () => {
     const start = Date.now();
     const map = new DottedMap({ height: 50, width: 50 });
     const svg = map.getSVG({ shape: 'circle' });

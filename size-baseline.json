@@ -1,0 +1,10 @@
+{
+  "description": "Minified bundle sizes in bytes of the 1.1.1 webpack build. npm run size fails if a build grows by more than maxGrowth over its baseline.",
+  "maxGrowth": 0.1,
+  "files": {
+    "index.js": 263041,
+    "index.mjs": 263041,
+    "without-countries.js": 3158,
+    "without-countries.mjs": 3158
+  }
+}

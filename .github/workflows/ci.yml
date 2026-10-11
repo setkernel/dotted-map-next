@@ -15,13 +15,16 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: '20.x'
   ARTIFACT_RETENTION_DAYS: 30
 
 jobs:
-  run-quality-assurance-checks:
-    name: 🧪 Quality Assurance & Testing
+  quality-checks:
+    name: 🧪 Checks (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20.x', '22.x', '24.x']
     steps:
       - name: 📥 Checkout repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,65 +35,75 @@ jobs:
       - name: ⚙️ Setup Node.js environment
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: 📦 Install project dependencies
         run: npm ci
 
-      - name: 🎨 Run code formatting and linting checks
-        run: |
-          npm run format:check
+      - name: 🎨 Check formatting
+        run: npm run format:check
 
-      - name: 🔎 Type-check sources (tsc --noEmit, strict)
+      - name: 🧹 Lint
+        run: npm run lint
+
+      - name: 🔎 Type-check sources and tests (tsc --noEmit, strict)
         run: npm run typecheck
+
+      - name: 🧪 Run tests
+        run: npm test
+
+      - name: 📈 Run tests with coverage (thresholds in vitest.config.mts)
+        run: npm run test:coverage
 
       - name: 🔨 Build production package
         run: npm run build
 
-      - name: 🧪 Execute test suite
-        run: npm test
+      - name: 📊 Check bundle size (max +10% over size-baseline.json)
+        run: npm run size
+
+      - name: 📦 Lint package metadata and types (publint, attw)
+        run: npm run lint:package
+
+      - name: ✅ Install packed tarball and smoke-test import, require and types
+        run: npm run test:package
 
       - name: 🔐 Run security audit
+        if: matrix.node-version == '20.x'
         run: |
           npm audit --audit-level=high || echo "⚠️ Security vulnerabilities found - review required"
 
-      - name: 📊 Analyze bundle size metrics
-        run: |
-          INDEX_SIZE=$(stat -c%s "index.js")
-          WITHOUT_COUNTRIES_SIZE=$(stat -c%s "without-countries.js")
-          echo "📦 Bundle Sizes:"
-          echo "  - index.js: $(($INDEX_SIZE / 1024))KB"
-          echo "  - without-countries.js: $(($WITHOUT_COUNTRIES_SIZE / 1024))KB"
-          
-          if [ $INDEX_SIZE -gt 300000 ]; then
-            echo "⚠️  WARNING: index.js is larger than 300KB"
-          fi
-          
-          if [ $WITHOUT_COUNTRIES_SIZE -gt 5000 ]; then
-            echo "⚠️  WARNING: without-countries.js is larger than 5KB"
-          fi
-
-      - name: ✅ Validate package exports functionality
-        run: |
-          node -e "
-            const DottedMap = require('./index').default;
-            const { getMapJSON } = require('./index');
-            const DottedMapWithoutCountries = require('./without-countries').default;
-            console.log('✅ All package exports working correctly');
-          "
-
       - name: 📤 Upload build artifacts for main branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: matrix.node-version == '20.x' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dotted-map-next-build-artifacts-${{ github.sha }}
           path: |
             index.js
-            without-countries.js
+            index.mjs
             index.d.ts
+            index.d.mts
+            without-countries.js
+            without-countries.mjs
             without-countries.d.ts
+            without-countries.d.mts
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+  # Keeps the check name used before the Node matrix existed, so branch
+  # protection rules that require it keep working. Passes only if every
+  # matrix job passed (a skipped job would otherwise count as success).
+  run-quality-assurance-checks:
+    name: 🧪 Quality Assurance & Testing
+    runs-on: ubuntu-latest
+    needs: [quality-checks]
+    if: always()
+    steps:
+      - name: ✅ Require all matrix checks to pass
+        env:
+          RESULT: ${{ needs.quality-checks.result }}
+        run: |
+          echo "Node matrix result: $RESULT"
+          test "$RESULT" = "success"
 
   auto-merge-dependency-updates:
     name: 🤖 Auto-merge Dependabot Pull Requests

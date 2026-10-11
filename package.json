@@ -32,18 +32,19 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:all": "npm run typecheck && npm run test:coverage",
+    "test:all": "npm run typecheck && npm test && npm run test:coverage",
     "test:package": "node scripts/smoke-pack.mjs",
     "lint:package": "publint --strict && attw --pack .",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"*.{js,mjs,ts,mts}\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"*.{js,mjs,ts,mts}\"",
     "clean": "node -e \"const fs = require('fs'); ['index', 'without-countries'].flatMap((n) => ['.js', '.mjs', '.d.ts', '.d.mts'].map((e) => n + e)).forEach((f) => fs.rmSync(f, { force: true }));\"",
     "prepack": "npm run clean && npm run build",
-    "size": "ls -l index.js index.mjs without-countries.js without-countries.mjs"
+    "size": "node scripts/check-size.mjs"
   },
   "keywords": [
     "map",
