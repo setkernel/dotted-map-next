@@ -49,7 +49,11 @@ export interface MultiPolygonFeature {
 
 /** A precomputed map, for example `JSON.parse(getMapJSON(settings))`. */
 export interface MapData {
-  points: Record<string, Point> | Point[];
+  /**
+   * Typed as in 1.x. `getMapJSON` actually produces an object keyed by grid
+   * position (`"x;y"`); both forms are accepted.
+   */
+  points: Point[];
   X_MIN: number;
   Y_MAX: number;
   X_RANGE: number;
@@ -85,6 +89,8 @@ export interface DottedMapInstance {
 
 export interface DottedMapWithoutCountriesConstructor {
   new (settings: WithoutCountriesSettings): DottedMapInstance;
+  /** The constructor itself; see the note at the end of this file. */
+  default: DottedMapWithoutCountriesConstructor;
 }
 
 // Type names exported by the hand-written declarations of 1.x. The aliases
@@ -143,8 +149,9 @@ function createDottedMapWithoutCountries({
     ystep,
     poly, // polygon data for avoidOuterPins feature
   } = map;
-  // Arrays are accepted too (1.x types declared Point[]); keys are added the same way.
-  const points = map.points as Record<string, Point>;
+  // An object keyed by grid position (from getMapJSON) or an array; pins are
+  // added by key either way.
+  const points = map.points as unknown as Record<string, Point>;
 
   const mapInstance: DottedMapInstance = {
     addPin({ lat, lng, data, svgOptions }) {
@@ -254,5 +261,10 @@ function createDottedMapWithoutCountries({
 const DottedMapWithoutCountries =
   createDottedMapWithoutCountries as unknown as DottedMapWithoutCountriesConstructor;
 type DottedMapWithoutCountries = DottedMapInstance;
+
+// 1.x served Node's `import` condition from a CommonJS build, so Node ES module
+// code received the whole exports object and used `pkg.default`. Keep that
+// working now that `import` loads a real ES module.
+DottedMapWithoutCountries.default = DottedMapWithoutCountries;
 
 export default DottedMapWithoutCountries;

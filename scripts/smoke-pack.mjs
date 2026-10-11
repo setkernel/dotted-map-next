@@ -55,6 +55,8 @@ const map = new DottedMap({ height: 10 });
 const svg = map.getSVG({ shape: 'hexagon' });
 const light = new DottedMapWithoutCountries({ map: JSON.parse(getMapJSON({ height: 10 })) });
 if (!svg.startsWith('<svg') || light.getSVG({ shape: 'hexagon' }) !== svg) throw new Error('ESM output mismatch');
+// 1.1.1 served \`import\` from CommonJS, so Node ESM code used pkg.default.
+if (DottedMap.default !== DottedMap || DottedMap.getMapJSON !== getMapJSON || DottedMapWithoutCountries.default !== DottedMapWithoutCountries) throw new Error('1.x ESM compatibility members missing');
 console.log('ESM ok:', typeof DottedMap, typeof getMapJSON, typeof DottedMapWithoutCountries, map.getPoints().length, 'points');
 `,
   );
@@ -80,7 +82,11 @@ const map: DottedMap = new DottedMap({ height: 10, grid: 'diagonal' });
 const point: DottedMapLib.Point = map.addPin({ lat: 0, lng: 0 });
 const data: DottedMapWithoutCountriesLib.Map = JSON.parse(getMapJSON({ height: 10 }));
 const svg: string = new DottedMapWithoutCountries({ map: data }).getSVG({ shape: 'circle' });
-export { point, svg };
+// 1.1.1-style Node ESM usage.
+const Legacy: typeof DottedMap = DottedMap.default;
+const legacyJson: string = DottedMap.getMapJSON({ height: 10 });
+const LegacyLight: typeof DottedMapWithoutCountries = DottedMapWithoutCountries.default;
+export { point, svg, Legacy, legacyJson, LegacyLight };
 `;
   writeFileSync(join(dir, 'types-esm.mts'), types);
   writeFileSync(join(dir, 'types-cjs.cts'), types);

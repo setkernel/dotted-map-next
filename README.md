@@ -105,7 +105,7 @@ Existing code works without changes, with one difference: invalid settings (for 
 
 ## Migrating from 1.x
 
-Nothing to do. The TypeScript rewrite and the new packaging keep the 1.x API: the same exports (`default` and `getMapJSON`, and the `without-countries` entry), constructor options, methods and type names (including `DottedMapLib` and `DottedMapWithoutCountriesLib`). `require('@setkernel/dotted-map-next').default` still works, and `import DottedMap from '@setkernel/dotted-map-next'` now loads a real ES module build.
+Nothing to do. The TypeScript rewrite and the new packaging keep the 1.x API: the same exports (`default` and `getMapJSON`, and the `without-countries` entry), constructor options, methods and type names (including `DottedMapLib` and `DottedMapWithoutCountriesLib`). `require('@setkernel/dotted-map-next').default` still works, and `import DottedMap from '@setkernel/dotted-map-next'` now loads a real ES module build. In Node.js, 1.x code that imported the package from an ES module and used `pkg.default` or `pkg.getMapJSON` also keeps working.
 
 Two things to know:
 

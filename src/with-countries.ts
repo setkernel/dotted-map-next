@@ -5,6 +5,7 @@ import DottedMapWithoutCountries from './without-countries';
 import type {
   DottedMapInstance,
   Grid,
+  MapData,
   MultiPolygonFeature,
   Pin,
   Point,
@@ -44,6 +45,10 @@ export interface Settings extends MapSettings {
 
 export interface DottedMapConstructor {
   new (settings: Settings): DottedMapInstance;
+  /** The constructor itself; see the note at the end of this file. */
+  default: DottedMapConstructor;
+  /** Same as the named export; see the note at the end of this file. */
+  getMapJSON: (props: MapSettings) => string;
 }
 
 // Type names exported by the hand-written declarations of 1.x. The aliases
@@ -326,10 +331,8 @@ function createDottedMap({
 
   return new DottedMapWithoutCountries({
     avoidOuterPins,
-    // Grid points carry only x and y until pins are added.
-    map: CACHE[cacheKey] as (typeof CACHE)[string] & {
-      points: Record<string, Point>;
-    },
+    // Grid points are keyed by position and carry only x and y.
+    map: CACHE[cacheKey] as unknown as MapData,
   });
 }
 
@@ -337,5 +340,11 @@ function createDottedMap({
 // on `this` and can be destructured), exactly as in 1.x.
 const DottedMap = createDottedMap as unknown as DottedMapConstructor;
 type DottedMap = DottedMapInstance;
+
+// 1.x served Node's `import` condition from a CommonJS build, so Node ES module
+// code received the whole exports object and used `pkg.default` and
+// `pkg.getMapJSON`. Keep that working now that `import` loads a real ES module.
+DottedMap.default = DottedMap;
+DottedMap.getMapJSON = getMapJSON;
 
 export default DottedMap;

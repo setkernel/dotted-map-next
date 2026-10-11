@@ -14,13 +14,13 @@ No changes to the public API: exported names, constructor options, method signat
 - Type declarations generated from the TypeScript source, for ES module (`.d.mts`) and CommonJS (`.d.ts`) consumers
 - Named type exports (`Region`, `Settings`, `MapSettings`, `Pin`, `Point`, `SvgSettings`, `SvgOptions`, `MapData` and more) alongside the existing `DottedMapLib` and `DottedMapWithoutCountriesLib` namespaces
 - `./package.json` export
+- In Node.js, `import DottedMap from '@setkernel/dotted-map-next'` now gives the constructor directly. Code written for 1.x's Node ES module behaviour (`pkg.default`, `pkg.getMapJSON`) keeps working: the default exports carry `default` (and `getMapJSON` on the main entry) as aliases
 
 ### Changed
 - Source migrated to TypeScript with `strict: true`
 - Build switched from webpack to tsup; bundles are slightly smaller (`index.js` 263,041 → 259,828 bytes)
 - `engines.node` is now `>=20` (was `>=14`)
 - The published package no longer includes `src/`, which the `exports` map never exposed
-- `MapData.points` (`DottedMapWithoutCountriesLib.Map`) is typed as an object keyed by grid position, matching what `getMapJSON` produces; arrays are still accepted
 
 ### Testing and CI
 - Test suite moved to Vitest; every assertion from `test.js` and `test.enhanced.js` is kept, with new tests for SVG options, pins, countries, precomputed maps, sanitization and SVG snapshots
