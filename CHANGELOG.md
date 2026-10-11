@@ -18,7 +18,8 @@ No changes to the public API: exported names, constructor options, method signat
 
 ### Changed
 - Source migrated to TypeScript with `strict: true`
-- Build switched from webpack to tsup; bundles are slightly smaller (`index.js` 263,041 → 259,828 bytes)
+- Build switched from webpack to tsup; bundles are slightly smaller (`index.js` 263,041 → 259,875 bytes)
+- `index.js` is now CommonJS instead of UMD; use a bundler or the ESM build (`index.mjs`) in browsers
 - `engines.node` is now `>=20` (was `>=14`)
 - The published package no longer includes `src/`, which the `exports` map never exposed
 

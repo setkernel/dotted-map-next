@@ -116,7 +116,7 @@ Two things to know:
 
 If you use a large number of points (height or width ≥ 100), it may take a bit of time to compute the map (from 1 to 30 seconds depending on your device and number of points). This is why the result grid is cached: creating another map with the same settings (`height`, `width`, `countries`, `region`, `grid`) in the same process reuses the computed grid and takes well under a millisecond.
 
-Maps created with the same settings share that cached grid, including pins added with `addPin`. Use different settings, or the [precomputed map](#precomputing-the-map) with a fresh `JSON.parse` per map, if you need independent maps.
+Maps created with the same settings share that cached grid, including pins added with `addPin`. Use different settings, or the [precomputed map](#precomputing-the-map) with a fresh `JSON.parse` per map, if you need independent maps. The cache is per module instance: if an application loads both the ESM and the CommonJS build, each keeps its own cache.
 
 ## Framework Integration
 
