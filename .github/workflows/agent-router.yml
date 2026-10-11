@@ -6,7 +6,7 @@ name: agent-router
 on:
   issues:
     types: [opened, labeled]
-  pull_request_target:          # no code is checked out, so this is safe
+  pull_request_target: # no code is checked out, so this is safe
     types: [opened, labeled]
 
 permissions:
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   route:
-    runs-on: ${{ vars.CI_RUNNER || 'setkernel-linux' }}   # org runners on sk-run01
+    runs-on: ${{ vars.CI_RUNNER || 'setkernel-linux' }} # org runners on sk-run01
     steps:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
@@ -50,7 +50,10 @@ jobs:
               core.info(`#${issue.number} -> ${who}`);
             } else {
               const pr = context.payload.pull_request;
-              if (!has(pr.labels, 'agent-review') || pr.requested_reviewers.length) return;
+              // CODEOWNERS auto-requests Raghav on every PR; only skip if a teammate is already asked
+              const teamLower = team.map(u => u.toLowerCase());
+              const peerAsked = (pr.requested_reviewers || []).some(r => teamLower.includes(r.login.toLowerCase()));
+              if (!has(pr.labels, 'agent-review') || peerAsked) return;
               const author = pr.user.login.toLowerCase();
               const candidates = team.filter(u => u.toLowerCase() !== author);
               if (!candidates.length) return;
