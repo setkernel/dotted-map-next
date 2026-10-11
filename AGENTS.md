@@ -32,6 +32,19 @@ Done means format:check, build and test:all pass locally. Say which check could 
 - Long or multi-step work: keep a checklist in `TASKS.md` (gitignored) so progress survives
   context compaction; tick items as they finish.
 
+## Tracking work (mandatory)
+Status lives ONLY in GitHub issues on the setkernel board: https://github.com/orgs/setkernel/projects/6
+(full rules: https://github.com/setkernel/hq/blob/main/docs/tracking.md). Never record status in
+docs, READMEs, comments in code, or dashboards.
+1. Search first (`gh issue list --state all --search "<words>"` here and in setkernel/hq); reuse,
+   never duplicate. New issue → add it to the board: `gh project item-add 6 --owner setkernel --url <url>`.
+2. Starting: assign yourself and set the board Status to In Progress.
+3. As you go: tick the issue's checkboxes and comment what changed with a link.
+4. PR body: `Closes setkernel/<repo>#N` (or `Refs` for partial work). Merge closes it and the board
+   marks it Done.
+5. Closing without a PR: comment how it was verified (command + result).
+6. Blocked on Raghav: label `owner`, board Needs = Raghav, and comment the exact action he must take.
+
 ## Layout
 - `src/`: library source (`with-countries.js`, `without-countries.js`, `countries.geo.json` map data)
 - `index.d.ts`, `without-countries.d.ts`: hand-written TypeScript types; keep in sync with the API
