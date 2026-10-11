@@ -41,7 +41,10 @@ jobs:
       - name: 🎨 Run code formatting and linting checks
         run: |
           npm run format:check
-          
+
+      - name: 🔎 Type-check sources (tsc --noEmit, strict)
+        run: npm run typecheck
+
       - name: 🔨 Build production package
         run: npm run build
 

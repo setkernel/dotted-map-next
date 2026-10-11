@@ -1,8 +1,14 @@
 node_modules/
 *.svg
-/index.js
-/without-countries.js
-TASKS.md
-/index.mjs
-/without-countries.mjs
 coverage/
+TASKS.md
+
+# Build output (npm run build)
+/index.js
+/index.mjs
+/index.d.ts
+/index.d.mts
+/without-countries.js
+/without-countries.mjs
+/without-countries.d.ts
+/without-countries.d.mts

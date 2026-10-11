@@ -1,0 +1,4 @@
+# Build output
+/index.*
+/without-countries.*
+coverage/

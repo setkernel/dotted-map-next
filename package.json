@@ -2,33 +2,46 @@
   "name": "@setkernel/dotted-map-next",
   "version": "1.1.1",
   "description": "Create beautiful SVG maps filled with dots for the world or countries - Enhanced with security fixes, performance improvements, and modern tooling",
+  "type": "commonjs",
   "main": "./index.js",
   "types": "./index.d.ts",
   "module": "./index.mjs",
   "exports": {
     ".": {
-      "types": "./index.d.ts",
-      "import": "./index.mjs",
-      "require": "./index.js"
+      "import": {
+        "types": "./index.d.mts",
+        "default": "./index.mjs"
+      },
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./index.js"
+      }
     },
     "./without-countries": {
-      "types": "./without-countries.d.ts",
-      "import": "./without-countries.mjs",
-      "require": "./without-countries.js"
+      "import": {
+        "types": "./without-countries.d.mts",
+        "default": "./without-countries.mjs"
+      },
+      "require": {
+        "types": "./without-countries.d.ts",
+        "default": "./without-countries.js"
+      }
     },
     "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsup",
+    "typecheck": "tsc --noEmit",
     "test": "node test.js",
     "test:enhanced": "node test.enhanced.js",
     "test:all": "npm test && npm run test:enhanced",
     "dev": "tsup --watch",
-    "clean": "node -e \"const fs = require('fs'); ['index.js', 'index.mjs', 'without-countries.js', 'without-countries.mjs'].forEach((f) => fs.rmSync(f, { force: true }));\"",
+    "clean": "node -e \"const fs = require('fs'); ['index', 'without-countries'].flatMap((n) => ['.js', '.mjs', '.d.ts', '.d.mts'].map((e) => n + e)).forEach((f) => fs.rmSync(f, { force: true }));\"",
     "prepack": "npm run clean && npm run build",
-    "format": "prettier --write src/**/*.js *.js",
-    "format:check": "prettier --check src/**/*.js *.js",
-    "size": "ls -l index.js index.mjs without-countries.js without-countries.mjs"
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.{js,mjs,ts}\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"*.{js,mjs,ts}\"",
+    "size": "ls -l index.js index.mjs without-countries.js without-countries.mjs",
+    "lint:package": "publint --strict && attw --pack ."
   },
   "keywords": [
     "map",
@@ -65,9 +78,11 @@
     "index.js",
     "index.mjs",
     "index.d.ts",
+    "index.d.mts",
     "without-countries.js",
     "without-countries.mjs",
     "without-countries.d.ts",
+    "without-countries.d.mts",
     "README.md",
     "LICENSE"
   ],
@@ -76,11 +91,13 @@
     "proj4": "2.22.0"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "0.18.5",
     "@eslint/js": "10.0.1",
     "@types/node": "20.19.43",
     "@vitest/coverage-v8": "4.1.11",
     "eslint": "10.12.0",
     "prettier": "3.9.9",
+    "publint": "0.3.25",
     "tsup": "8.5.1",
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.1",
