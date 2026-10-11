@@ -3,3 +3,6 @@ node_modules/
 /index.js
 /without-countries.js
 TASKS.md
+/index.mjs
+/without-countries.mjs
+coverage/
