@@ -1,0 +1,60 @@
+# agent-router: assigns agent tasks to the least-busy employee, and picks a different
+# employee to review each agent PR. Team list comes from the org variable AGENT_TEAM
+# (comma-separated GitHub usernames), set by setup-repos.sh.
+name: agent-router
+
+on:
+  issues:
+    types: [opened, labeled]
+  pull_request_target:          # no code is checked out, so this is safe
+    types: [opened, labeled]
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  route:
+    runs-on: ${{ vars.CI_RUNNER || 'setkernel-linux' }}   # org runners on sk-run01
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          TEAM: ${{ vars.AGENT_TEAM }}
+        with:
+          script: |
+            const team = (process.env.TEAM || '').split(',').map(s => s.trim()).filter(Boolean);
+            if (!team.length) { core.setFailed('Org variable AGENT_TEAM is not set'); return; }
+            const { owner, repo } = context.repo;
+            const has = (labels, name) => (labels || []).some(l => l.name === name);
+
+            // open agent work per person in this repo
+            async function load(user, qualifier) {
+              const q = `repo:${owner}/${repo} is:open ${qualifier}:${user} -label:human`;
+              const r = await github.rest.search.issuesAndPullRequests({ q, per_page: 1 });
+              return r.data.total_count;
+            }
+            async function leastBusy(users, qualifier) {
+              const loads = await Promise.all(users.map(async u => [u, await load(u, qualifier)]));
+              loads.sort((a, b) => a[1] - b[1] || Math.random() - 0.5);
+              core.info('load: ' + loads.map(l => l.join('=')).join(', '));
+              return loads[0][0];
+            }
+
+            if (context.eventName === 'issues') {
+              const issue = context.payload.issue;
+              if (issue.pull_request || !has(issue.labels, 'agent-ready') || has(issue.labels, 'human')) return;
+              if (issue.assignees.length) return;                       // you assigned it yourself
+              const who = await leastBusy(team, 'assignee');
+              await github.rest.issues.addAssignees({ owner, repo, issue_number: issue.number, assignees: [who] });
+              core.info(`#${issue.number} -> ${who}`);
+            } else {
+              const pr = context.payload.pull_request;
+              if (!has(pr.labels, 'agent-review') || pr.requested_reviewers.length) return;
+              const author = pr.user.login.toLowerCase();
+              const candidates = team.filter(u => u.toLowerCase() !== author);
+              if (!candidates.length) return;
+              const who = await leastBusy(candidates, 'review-requested');
+              await github.rest.pulls.requestReviewers({ owner, repo, pull_number: pr.number, reviewers: [who] });
+              core.info(`PR #${pr.number} review -> ${who}`);
+            }
