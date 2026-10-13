@@ -105,22 +105,51 @@ The workflow will:
 - **Dry run mode**: Test releases without creating them
 
 ### Security
-- **Token management**: Separate tokens for NPM and GitHub
+- **No stored npm token**: npm publishing uses trusted publishing (OIDC); GitHub Packages uses the built-in `GITHUB_TOKEN`
 - **Access control**: Manual triggers only for releases
 - **Audit integration**: Automatic security vulnerability detection
 - **Confirmation required**: Emergency publishes need explicit confirmation
 
 ## Required Secrets
 
-Configure these in repository settings:
-
-- **`NPM_TOKEN`**: For publishing to npm registry
 - **`GITHUB_TOKEN`**: Automatically provided by GitHub
+
+No npm token is needed. See [npm Trusted Publishing](#npm-trusted-publishing).
+
+## npm Trusted Publishing
+
+Both publishing workflows publish to npm with
+[trusted publishing](https://docs.npmjs.com/trusted-publishers): the job requests a GitHub
+OIDC token (`id-token: write`) and npm exchanges it for a short-lived publish token. npm also
+attaches a provenance attestation (`--provenance`) linking each version to the workflow run that built it.
+
+### Workflow requirements
+- `permissions: id-token: write` on the publishing job
+- Node 22.14+ and npm 11.5.1+ (publishing jobs use Node 24; a step upgrades npm if needed)
+- `repository.url` in `package.json` must match `https://github.com/setkernel/dotted-map-next`
+
+### npm-side setting (package owner, once)
+On npmjs.com, open **@setkernel/dotted-map-next → Settings → Trusted Publisher**, choose
+**GitHub Actions**, and add one entry per workflow file:
+
+| Field | Release | Emergency |
+| --- | --- | --- |
+| Organization or user | `setkernel` | `setkernel` |
+| Repository | `dotted-map-next` | `dotted-map-next` |
+| Workflow filename | `release-and-publish.yml` | `emergency-publish.yml` |
+| Environment | _(leave empty)_ | _(leave empty)_ |
+
+The workflow filename is only the file name, not the path. Renaming either workflow file
+breaks publishing until the entry on npmjs.com is updated to match.
+
+After one dispatched release publishes successfully, revoke the old npm token on npmjs.com and
+delete the `NPM_TOKEN` repository secret. Optionally, under **Publishing access**, require
+2FA and disallow tokens so only the trusted publisher can publish.
 
 ## Troubleshooting
 
 ### Release Not Publishing
-1. Check NPM_TOKEN is configured in repository secrets
+1. Check the trusted publisher entry on npmjs.com matches the workflow filename (see [npm Trusted Publishing](#npm-trusted-publishing))
 2. Verify you have publish permissions to @setkernel organization
 3. Use Emergency Publish for immediate fixes
 4. Check workflow logs for detailed error messages
