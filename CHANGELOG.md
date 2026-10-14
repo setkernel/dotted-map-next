@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+No changes to the public API: exported names, constructor options, method signatures and type names are the same as in 1.1.1. See "Migrating from 1.x" in the README.
+
+### Added
+- ES module build (`index.mjs`, `without-countries.mjs`) next to the CommonJS build; `import` and `require` both resolve through the `exports` map, with `types` first in each condition
+- Type declarations generated from the TypeScript source, for ES module (`.d.mts`) and CommonJS (`.d.ts`) consumers
+- Named type exports (`Region`, `Settings`, `MapSettings`, `Pin`, `Point`, `SvgSettings`, `SvgOptions`, `MapData` and more) alongside the existing `DottedMapLib` and `DottedMapWithoutCountriesLib` namespaces
+- `./package.json` export
+- In Node.js, `import DottedMap from '@setkernel/dotted-map-next'` now gives the constructor directly. Code written for 1.x's Node ES module behaviour (`pkg.default`, `pkg.getMapJSON`) keeps working: the default exports carry `default` (and `getMapJSON` on the main entry) as aliases
+
+### Changed
+- Source migrated to TypeScript with `strict: true`
+- Build switched from webpack to tsup; bundles are slightly smaller (`index.js` 263,041 → 259,875 bytes)
+- `index.js` is now CommonJS instead of UMD; use a bundler or the ESM build (`index.mjs`) in browsers
+- `engines.node` is now `>=20` (was `>=14`)
+- The published package no longer includes `src/`, which the `exports` map never exposed
+
+### Testing and CI
+- Test suite moved to Vitest; every assertion from `test.js` and `test.enhanced.js` is kept, with new tests for SVG options, pins, countries, precomputed maps, sanitization and SVG snapshots
+- CI runs on Node.js 20, 22 and 24: formatting, ESLint, type-check, tests with coverage thresholds, build, a bundle-size budget (+10% over 1.1.1), publint, arethetypeswrong and an install test of the packed tarball
+
+### Documentation
+- README corrected: Node.js requirement, test commands, bundle sizes, error-message examples and the description of what is sanitized; removed the unsupported "Security Audited" badge, the "100% test coverage" claim and a cache comparison with upstream `dotted-map` that no longer holds; fixed the Dependencies badge link
+
 ## [1.0.0] - 2024-07-09
 
 ### 🚀 **INITIAL RELEASE - @setkernel/dotted-map-next**

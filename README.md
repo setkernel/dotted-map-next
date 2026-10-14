@@ -2,13 +2,12 @@
 <div align="center">
 
 [![npm version](https://badge.fury.io/js/@setkernel%2Fdotted-map-next.svg)](https://www.npmjs.com/package/@setkernel/dotted-map-next)
-[![CI](https://github.com/setkernel/dotted-map-next/workflows/🔄%20Continuous%20Integration/badge.svg)](https://github.com/setkernel/dotted-map-next/actions/workflows/ci.yml)
-[![Dependencies](https://github.com/setkernel/dotted-map-next/workflows/🔒%20Dependency%20Security%20%26%20Updates/badge.svg)](https://github.com/setkernel/dotted-map-next/actions/workflows/dependencies.yml)
+[![CI](https://github.com/setkernel/dotted-map-next/actions/workflows/ci.yml/badge.svg)](https://github.com/setkernel/dotted-map-next/actions/workflows/ci.yml)
+[![Dependencies](https://github.com/setkernel/dotted-map-next/actions/workflows/dependencies.yml/badge.svg)](https://github.com/setkernel/dotted-map-next/actions/workflows/dependencies.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/@setkernel/dotted-map-next.svg)](https://nodejs.org/)
 [![NPM Downloads](https://img.shields.io/npm/dm/@setkernel/dotted-map-next.svg)](https://www.npmjs.com/package/@setkernel/dotted-map-next)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
-[![Security](https://img.shields.io/badge/Security-Audited-green.svg)](https://github.com/setkernel/dotted-map-next/security)
+[![TypeScript](https://img.shields.io/badge/types-included-blue.svg)](https://www.typescriptlang.org/)
 [![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)](https://github.com/setkernel/dotted-map-next/graphs/commit-activity)
 
 </div>
@@ -36,28 +35,25 @@ Create beautiful SVG maps filled with dots for the world or countries with enhan
 This is an enhanced version of the original `dotted-map` with significant improvements:
 
 ### 🔐 **Security Enhancements**
-- **XSS Protection**: All user inputs are sanitized to prevent script injection
-- **Input Validation**: Comprehensive validation with helpful error messages
-- **Secure Defaults**: Safe fallbacks for all user-provided values
+- **SVG sanitization**: colors, radius, shape and point coordinates are sanitized before they reach the SVG, so they cannot inject markup or script (see [Security Features](#security-features))
+- **Input Validation**: map settings are validated with descriptive error messages
 
-### ⚡ **Performance Improvements**
-- **99.9% Cache Performance Boost**: Repeated map generation now takes 0ms instead of 796ms
-- **Optimized Build**: Modern webpack configuration with tree shaking
-- **Memory Efficiency**: Improved data structures and algorithms
+### ⚡ **Performance**
+- **Cached grids**: maps with identical settings are computed once per process
+- **Small builds**: minified ES module and CommonJS builds; the precomputed-map entry is under 3 KB
 
 ### 🛡️ **Reliability & Quality**
-- **100% Test Coverage**: 24 comprehensive test cases covering all functionality
-- **Error Handling**: Graceful failures with descriptive error messages
-- **Node.js 22+ Compatibility**: Works with all modern Node.js versions
+- **Tested**: Vitest suite covering rendering, pins, countries, precomputed maps and sanitization, with coverage thresholds enforced in CI
+- **Node.js 20, 22 and 24**: the full check suite runs on each in CI
 
-### 🚀 **Modern Development**
-- **TypeScript Support**: Enhanced type definitions for better IDE support
-- **Modern Tooling**: Updated build process and CI/CD pipeline
-- **Developer Experience**: Better debugging and development tools
+### 🚀 **Modern Packaging**
+- **Written in TypeScript** (`strict`); the published type declarations are generated from the source
+- **Dual ES module + CommonJS** builds with an `exports` map: `import` and `require` both work
+- **Tree-shakeable** (`"sideEffects": false`)
 
 ## Installation
 
-Requires NodeJS ≥ 14.
+Requires Node.js ≥ 20. For the browser, use it through a bundler that supports the package `exports` field.
 
 ```bash
 npm install @setkernel/dotted-map-next
@@ -68,7 +64,7 @@ npm install @setkernel/dotted-map-next
 ```js
 const fs = require('fs');
 const DottedMap = require('@setkernel/dotted-map-next').default;
-// Or in the browser: import DottedMap from '@setkernel/dotted-map-next';
+// Or, as an ES module: import DottedMap from '@setkernel/dotted-map-next';
 
 const map = new DottedMap({ height: 60, grid: 'diagonal' });
 
@@ -95,7 +91,7 @@ fs.writeFileSync('./map.svg', svgMap);
 
 ## Migration from dotted-map
 
-The API is 100% compatible with the original `dotted-map`. Simply replace the import:
+The API is compatible with the original `dotted-map`. Simply replace the import:
 
 ```js
 // Old
@@ -105,25 +101,22 @@ const DottedMap = require('dotted-map').default;
 const DottedMap = require('@setkernel/dotted-map-next').default;
 ```
 
-All your existing code will work without any changes!
+Existing code works without changes, with one difference: invalid settings (for example a negative height, an unknown grid or an unknown country code) now throw an error with a descriptive message instead of being accepted.
+
+## Migrating from 1.x
+
+Nothing to do. The TypeScript rewrite and the new packaging keep the 1.x API: the same exports (`default` and `getMapJSON`, and the `without-countries` entry), constructor options, methods and type names (including `DottedMapLib` and `DottedMapWithoutCountriesLib`). `require('@setkernel/dotted-map-next').default` still works, and `import DottedMap from '@setkernel/dotted-map-next'` now loads a real ES module build. In Node.js, 1.x code that imported the package from an ES module and used `pkg.default` or `pkg.getMapJSON` also keeps working.
+
+Two things to know:
+
+- Node.js 20 or newer is required (Node 14 to 18 are end-of-life).
+- The package no longer ships its `src/` folder. It was never importable (the `exports` map did not expose it); the country data lives in the repository at [`src/countries.geo.json`](https://github.com/setkernel/dotted-map-next/blob/main/src/countries.geo.json).
 
 ## Performance
 
-If you use a large number of points (height or width ≥ 100), it may take a bit of time to compute the map (from 1 to 30 seconds depending on your device and number of points). This is why the result grid is cached. 
+If you use a large number of points (height or width ≥ 100), it may take a bit of time to compute the map (from 1 to 30 seconds depending on your device and number of points). This is why the result grid is cached: creating another map with the same settings (`height`, `width`, `countries`, `region`, `grid`) in the same process reuses the computed grid and takes well under a millisecond.
 
-### ⚡ Enhanced Caching (New!)
-In `@setkernel/dotted-map-next`, the caching system has been completely fixed:
-- **First map generation**: Normal computation time
-- **Subsequent identical maps**: **0ms** (was 796ms in original)
-- **99.9% performance improvement** for repeated operations
-
-### Performance Comparison
-| Operation | Original dotted-map | @setkernel/dotted-map-next | Improvement |
-|-----------|-------------------|----------------|-------------|
-| First map creation | 177ms | 177ms | Same |
-| Cached map creation | 796ms | 0ms | **99.9%** |
-| With 100x100 points | 722ms | 722ms | Same |
-| Cached 100x100 | 796ms | 0ms | **99.9%** |
+Maps created with the same settings share that cached grid, including pins added with `addPin`. Use different settings, or the [precomputed map](#precomputing-the-map) with a fresh `JSON.parse` per map, if you need independent maps. The cache is per module instance: if an application loads both the ESM and the CommonJS build, each keeps its own cache.
 
 ## Framework Integration
 
@@ -191,10 +184,12 @@ const MyComponent = () => {
 ```
 
 ### Bundle Size Comparison
-| Bundle | Size | Use Case |
-|--------|------|----------|
-| `@setkernel/dotted-map-next` | 257KB | Full functionality with countries |
-| `@setkernel/dotted-map-next/without-countries` | 3KB | Precomputed maps only |
+| Bundle | Minified | Gzipped | Use Case |
+|--------|---------:|--------:|----------|
+| `@setkernel/dotted-map-next` | 254 KB | 103 KB | Full functionality with countries (includes the country outlines) |
+| `@setkernel/dotted-map-next/without-countries` | 2.6 KB | 1.4 KB | Precomputed maps only |
+
+Sizes of the CommonJS build, excluding the `proj4` and `@turf/boolean-point-in-polygon` dependencies. CI fails if a build grows by more than 10%.
 
 ## API Reference
 
@@ -206,13 +201,13 @@ import DottedMap from '@setkernel/dotted-map-next';
 const map = new DottedMap({
   height: 60,           // Map height in points
   width: 100,           // Map width in points (specify either height or width)
-  countries: ['USA', 'CAN'], // Country codes (see countries.geo.json)
+  countries: ['USA', 'CAN'], // ISO 3166-1 alpha-3 codes (see src/countries.geo.json in the repository)
   region: {             // Custom region bounds
     lat: { min: 20, max: 50 },
     lng: { min: -130, max: -60 }
   },
   grid: 'vertical',     // 'vertical' | 'diagonal'
-  avoidOuterPins: false // Prevent pins outside region/countries
+  avoidOuterPins: false // getPin returns undefined outside the land of the map's countries
 });
 ```
 
@@ -238,7 +233,8 @@ Get pin coordinates for a lat/lng position.
 
 ```js
 const pin = map.getPin({ lat: 40.7589, lng: -73.9851 });
-// Returns: { x, y, lat, lng }
+// Returns: { x, y, lat, lng }, or undefined with avoidOuterPins when the
+// position is outside the land of the map's countries
 ```
 
 #### `map.getPoints()`
@@ -255,9 +251,9 @@ Generate SVG string.
 ```js
 const svg = map.getSVG({
   shape: 'circle',          // 'circle' | 'hexagon'
-  backgroundColor: '#f0f0f0', // Background color
+  backgroundColor: '#f0f0f0', // Background color (default 'transparent')
   color: '#333333',         // Default point color
-  radius: 0.5               // Default point radius
+  radius: 0.5               // Default point radius (default 0.5)
 });
 ```
 
@@ -275,7 +271,15 @@ const mapData = getMapJSON({ height: 60, grid: 'diagonal' });
 ## Security Features
 
 ### Input Sanitization
-All user inputs are automatically sanitized:
+Settings and pin options are sanitized before they are written into the SVG:
+
+- `color`, `backgroundColor` and pin `svgOptions.color` must be a hex color, `rgb()`, `rgba()`, `hsl()`, `hsla()` or a single word such as a named color; anything else becomes `#000000`
+- `radius` and pin `svgOptions.radius` must be a number from 0 to 1000; anything else becomes `0.5`
+- `shape` must be `'circle'` or `'hexagon'`; anything else becomes `'circle'`
+- point coordinates are parsed as numbers, so a tampered precomputed map cannot inject attributes through them
+- pin `data` is never written into the SVG
+
+Precomputed map data passed to `without-countries` should come from `getMapJSON`: its `width` and `height` are written into the SVG `viewBox` as they are.
 
 ```js
 // Malicious input is safely handled
@@ -298,13 +302,13 @@ Comprehensive validation with helpful error messages:
 
 ```js
 try {
-  new DottedMap({ height: -1 });
+  new DottedMap({ height: 20000 });
 } catch (error) {
   console.error(error.message); // "Height must be a number between 0 and 10000"
 }
 
 try {
-  new DottedMap({ countries: ['INVALID'] });
+  new DottedMap({ height: 60, countries: ['INVALID'] });
 } catch (error) {
   console.error(error.message); // "Invalid country codes: INVALID"
 }
@@ -312,12 +316,11 @@ try {
 
 ## Testing
 
-Run the comprehensive test suite:
-
 ```bash
-npm test                    # Basic tests
-npm run test:enhanced       # Full test suite (24 tests)
-npm run test:all           # All tests
+npm test                 # Vitest suite
+npm run test:coverage    # with coverage thresholds
+npm run test:all         # type-check, tests, tests with coverage
+npm run test:package     # pack, install the tarball, try import/require and types
 ```
 
 ## Credits and Acknowledgments
@@ -327,9 +330,9 @@ npm run test:all           # All tests
 
 ### Enhanced Version Contributors
 - **Enhanced by**: Community contributions for security, performance, and reliability improvements
-- **Testing**: Comprehensive test suite with 100% coverage
+- **Testing**: Vitest suite with coverage thresholds enforced in CI
 - **Security**: XSS prevention and input sanitization
-- **Performance**: Cache optimization and modern build tools
+- **Performance**: Cache fixes and modern build tools
 
 ### Data Sources
 - **Countries GeoJSON**: https://github.com/johan/world.geo.json
@@ -337,7 +340,7 @@ npm run test:all           # All tests
 - **Geometry**: @turf/boolean-point-in-polygon for spatial operations
 
 ### Inspiration
-This enhanced version was created to address the need for a modern, secure, and high-performance SVG map library while maintaining 100% compatibility with the original `dotted-map` API.
+This enhanced version was created to address the need for a modern, secure, and high-performance SVG map library while maintaining compatibility with the original `dotted-map` API.
 
 ## License
 
@@ -348,7 +351,9 @@ MIT License - see LICENSE file for details.
 Issues and pull requests are welcome! Please ensure all tests pass and follow the existing code style.
 
 ```bash
+npm run lint        # ESLint
+npm run typecheck   # tsc --noEmit (strict)
 npm run test:all    # Run all tests
-npm run build      # Build the library
-npm run format     # Format code
+npm run build       # Build the library
+npm run format      # Format code
 ```

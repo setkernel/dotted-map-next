@@ -2,32 +2,49 @@
   "name": "@setkernel/dotted-map-next",
   "version": "1.1.1",
   "description": "Create beautiful SVG maps filled with dots for the world or countries - Enhanced with security fixes, performance improvements, and modern tooling",
+  "type": "commonjs",
   "main": "./index.js",
   "types": "./index.d.ts",
+  "module": "./index.mjs",
   "exports": {
     ".": {
-      "import": "./index.js",
-      "require": "./index.js",
-      "types": "./index.d.ts"
+      "import": {
+        "types": "./index.d.mts",
+        "default": "./index.mjs"
+      },
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./index.js"
+      }
     },
     "./without-countries": {
-      "import": "./without-countries.js",
-      "require": "./without-countries.js",
-      "types": "./without-countries.d.ts"
-    }
+      "import": {
+        "types": "./without-countries.d.mts",
+        "default": "./without-countries.mjs"
+      },
+      "require": {
+        "types": "./without-countries.d.ts",
+        "default": "./without-countries.js"
+      }
+    },
+    "./package.json": "./package.json"
   },
-  "module": "./src/with-countries.js",
   "scripts": {
-    "build": "webpack",
-    "test": "node test.js",
-    "test:enhanced": "node test.enhanced.js",
-    "test:all": "npm test && npm run test:enhanced",
-    "dev": "webpack --mode development --watch",
-    "clean": "node -e \"const fs = require('fs'); ['index.js', 'without-countries.js'].forEach(f => { try { fs.unlinkSync(f); } catch (e) {} });\"",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:all": "npm run typecheck && npm test && npm run test:coverage",
+    "test:package": "node scripts/smoke-pack.mjs",
+    "lint:package": "publint --strict && attw --pack .",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"*.{js,mjs,ts,mts}\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"*.{js,mjs,ts,mts}\"",
+    "clean": "node -e \"const fs = require('fs'); ['index', 'without-countries'].flatMap((n) => ['.js', '.mjs', '.d.ts', '.d.mts'].map((e) => n + e)).forEach((f) => fs.rmSync(f, { force: true }));\"",
     "prepack": "npm run clean && npm run build",
-    "format": "prettier --write src/**/*.js *.js",
-    "format:check": "prettier --check src/**/*.js *.js",
-    "size": "ls -lh index.js without-countries.js"
+    "size": "node scripts/check-size.mjs"
   },
   "keywords": [
     "map",
@@ -58,14 +75,17 @@
   },
   "homepage": "https://github.com/setkernel/dotted-map-next#readme",
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=20"
   },
   "files": [
     "index.js",
-    "without-countries.js",
+    "index.mjs",
     "index.d.ts",
+    "index.d.mts",
+    "without-countries.js",
+    "without-countries.mjs",
     "without-countries.d.ts",
-    "src/",
+    "without-countries.d.mts",
     "README.md",
     "LICENSE"
   ],
@@ -74,10 +94,17 @@
     "proj4": "2.22.0"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "0.18.5",
+    "@eslint/js": "10.0.1",
+    "@types/node": "20.19.43",
+    "@vitest/coverage-v8": "4.1.11",
+    "eslint": "10.12.0",
     "prettier": "3.9.9",
-    "terser-webpack-plugin": "^5.3.14",
-    "webpack": "5.111.1",
-    "webpack-cli": "7.2.3"
+    "publint": "0.3.25",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.1",
+    "vitest": "4.1.11"
   },
   "sideEffects": false
 }

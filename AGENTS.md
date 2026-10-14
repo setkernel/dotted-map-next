@@ -10,16 +10,20 @@ See `README.md` for the API and `CHANGELOG.md` for history.
 
 ## Commands
 ```sh
-npm ci                  # install (Node 20+; CI uses 20.x)
-npm run build           # webpack: builds index.js and without-countries.js (git-ignored)
-npm test                # basic tests (node test.js)
-npm run test:enhanced   # full suite (24 tests)
-npm run test:all        # both
+npm ci                  # install (Node 20+; CI runs 20.x, 22.x and 24.x)
+npm run build           # tsup: index/without-countries .js (CJS), .mjs (ESM), .d.ts/.d.mts (git-ignored)
+npm run lint            # eslint
+npm run typecheck       # tsc --noEmit (strict), includes tests
+npm test                # vitest
+npm run test:all        # typecheck + tests + tests with coverage thresholds
+npm run size            # bundle-size budget against size-baseline.json (after build)
+npm run lint:package    # publint + arethetypeswrong
+npm run test:package    # npm pack, install the tarball in a temp dir, try import/require/types
 npm run format:check    # prettier check (npm run format to fix)
-npm run dev             # webpack watch mode
+npm run dev             # tsup watch mode
 # publish: only the owner, via the "Release & Publish Package" workflow (workflow_dispatch). Never `npm publish` by hand.
 ```
-Done means format:check, build and test:all pass locally. Say which check could not run and why.
+Done means format:check, lint, build, test:all and size pass locally. Say which check could not run and why.
 
 ## Working agreement
 - When a step doesn't need the owner, keep going. Put status notes in the same message as the next action.
@@ -46,14 +50,16 @@ docs, READMEs, comments in code, or dashboards.
 6. Blocked on Raghav: label `owner`, board Needs = Raghav, and comment the exact action he must take.
 
 ## Layout
-- `src/`: library source (`with-countries.js`, `without-countries.js`, `countries.geo.json` map data)
-- `index.d.ts`, `without-countries.d.ts`: hand-written TypeScript types; keep in sync with the API
-- `test.js`, `test.enhanced.js`: test scripts (plain Node, no framework)
-- `webpack.config.js`: build config; `images/`: README images
+- `src/`: TypeScript source (`with-countries.ts`, `without-countries.ts`, `projection.ts`, `countries.geo.json` map data).
+  Published types are generated from it; `test/types/consumer-1x.ts` must keep compiling (1.x type compatibility)
+- `test/`: Vitest suites (`legacy.test.ts` is the port of the 1.x scripts; keep its assertions)
+- `scripts/`: `check-size.mjs` (bundle budget), `smoke-pack.mjs` (tarball install test)
+- `tsup.config.ts`, `tsconfig.json`, `vitest.config.mts`, `eslint.config.mjs`: tooling; `images/`: README images
 - `.github/workflows/`: `ci.yml`, `dependencies.yml` (weekly audit), release and emergency-publish workflows
 
 ## Don't touch
-- `index.js` and `without-countries.js` at the repo root are build output (git-ignored); edit `src/`.
+- `index.*` and `without-countries.*` at the repo root are build output (git-ignored); edit `src/`.
+- `size-baseline.json`: raise a baseline only with the owner's agreement.
 - `src/countries.geo.json` is large map data; do not reformat or hand-edit it.
 - `package.json` `version`: bumped by the release workflow, not by hand.
 - `.github/workflows/release-and-publish.yml` and `emergency-publish.yml` publish to npm; change only with the owner.
