@@ -16,7 +16,8 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: '20.x'
+  # Trusted publishing needs Node 22.14+ and npm 11.5.1+
+  NODE_VERSION: '24.x'
   REGISTRY_URL: 'https://registry.npmjs.org'
 
 concurrency:
@@ -28,6 +29,11 @@ jobs:
     name: 🚨 Execute Emergency Hotfix Publication
     runs-on: ubuntu-latest
     if: github.event.inputs.confirmation != null && (github.event.inputs.confirmation == 'EMERGENCY' || github.event.inputs.confirmation == 'emergency')
+    # npm trusted publishing: npm exchanges this job's OIDC token for a short-lived
+    # publish token, so no NPM_TOKEN secret is stored. See .github/WORKFLOWS.md.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: 🔍 Validate emergency inputs
         run: |
@@ -53,15 +59,12 @@ jobs:
       - name: 📦 Install dependencies for emergency build
         run: npm ci
 
-      - name: 🔐 Validate NPM token
+      - name: 🔐 Ensure npm supports trusted publishing
         run: |
-          if ! npm whoami 2>/dev/null; then
-            echo "❌ NPM token validation failed"
-            exit 1
+          if ! node -e "const [a,b,c]=process.argv[1].split('.').map(Number);process.exit(a>11||(a===11&&(b>5||(b===5&&c>=1)))?0:1)" "$(npm --version)"; then
+            npm install -g npm@11
           fi
-          echo "✅ NPM token validated"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          echo "npm $(npm --version)"
 
       - name: 🔍 Check version doesn't exist on NPM
         run: |
@@ -97,9 +100,7 @@ jobs:
 
       - name: 🚨 Deploy emergency hotfix to NPM registry
         id: npm_publish
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
         continue-on-error: true
 
       - name: 📊 Generate emergency publication summary

@@ -28,6 +28,7 @@ permissions:
 
 env:
   NODE_VERSION: '20.x'
+  PUBLISH_NODE_VERSION: '24.x'
   REGISTRY_URL: 'https://registry.npmjs.org'
   ARTIFACT_RETENTION_DAYS: 30
 
@@ -209,6 +210,11 @@ jobs:
     needs: [run-pre-release-validation, create-github-release]
     runs-on: ubuntu-latest
     if: always() && needs.create-github-release.outputs.release_created == 'true' && (needs.run-pre-release-validation.result == 'success' || github.event.inputs.skip_tests == 'true')
+    # npm trusted publishing: npm exchanges this job's OIDC token for a short-lived
+    # publish token, so no NPM_TOKEN secret is stored. See .github/WORKFLOWS.md.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: 📥 Checkout code for NPM publishing (with latest changes)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -220,9 +226,17 @@ jobs:
       - name: ⚙️ Setup Node.js for NPM registry
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          # Trusted publishing needs Node 22.14+ and npm 11.5.1+
+          node-version: ${{ env.PUBLISH_NODE_VERSION }}
           registry-url: ${{ env.REGISTRY_URL }}
           cache: 'npm'
+
+      - name: 🔐 Ensure npm supports trusted publishing
+        run: |
+          if ! node -e "const [a,b,c]=process.argv[1].split('.').map(Number);process.exit(a>11||(a===11&&(b>5||(b===5&&c>=1)))?0:1)" "$(npm --version)"; then
+            npm install -g npm@11
+          fi
+          echo "npm $(npm --version)"
 
       - name: 🔄 Pull latest changes including version bump
         run: |
@@ -246,9 +260,7 @@ jobs:
         run: npm run build
 
       - name: 🚀 Deploy package to NPM registry
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
         continue-on-error: true
 
       - name: 📊 Generate NPM deployment summary
@@ -263,7 +275,7 @@ jobs:
           else
             echo "❌ **NPM Publishing Failed**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "- **Reason**: NPM_TOKEN may be missing or 2FA required" >> $GITHUB_STEP_SUMMARY
+            echo "- **Reason**: trusted publisher not configured on npmjs.com for this workflow, or package.json repository.url mismatch" >> $GITHUB_STEP_SUMMARY
             echo "- **Manual Fix**: Run \`npm publish --access public --otp=YOUR_CODE\`" >> $GITHUB_STEP_SUMMARY
           fi
 
