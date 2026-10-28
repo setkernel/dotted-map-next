@@ -44,5 +44,4 @@ there are no publish secrets (and nothing in Infisical). Never `npm publish` by 
 - `package.json` `version` is bumped by the release workflow, not by hand.
 - `release-and-publish.yml` and `emergency-publish.yml` publish to npm; change them only with the owner.
 - This repository is public: workflows run on GitHub-hosted runners (`ubuntu-latest`), never a
-  self-hosted runner. Actions are pinned to a full commit SHA with the version in a comment;
-  Dependabot (`.github/dependabot.yml`) keeps those pins current.
+  self-hosted runner. Actions are pinned to a full commit SHA with the version in a comment.
